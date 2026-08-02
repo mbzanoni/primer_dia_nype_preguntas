@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F5F1E8">
+<title>Mapa de preguntas · NyPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F1E8;
+    --ink: #4A2377;
+    --ink-soft: rgba(74, 35, 119, 0.6);
+    --ink-fainter: rgba(74, 35, 119, 0.3);
+    --teal: #0D7E87;
+    --coral: #F55F74;
+    --sky: #8CC5E3;
+    --divider: rgba(74, 35, 119, 0.12);
+    --card-bg: #FFFFFF;
+    --shadow: 0 1px 0 rgba(74, 35, 119, 0.04), 0 12px 32px -16px rgba(74, 35, 119, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 24px 32px;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .title-block h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 500;
+    font-size: 44px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--coral);
+    font-weight: 400;
+  }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--coral);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .stats {
+    display: flex;
+    align-items: baseline;
+    gap: 32px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 40px;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-num em {
+    font-style: italic;
+    color: var(--coral);
+    font-weight: 400;
+  }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  /* ----- Grupos legend ----- */
+  .grupos-legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    justify-content: center;
+  }
+
+  .grupo-tag {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--card-bg);
+    border: 2px solid var(--divider);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.08s ease, border-color 0.15s ease, opacity 0.15s ease;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    user-select: none;
+    box-shadow: var(--shadow);
+  }
+
+  .grupo-tag:active { transform: scale(0.97); }
+
+  .grupo-tag .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c);
+    flex-shrink: 0;
+  }
+
+  .grupo-tag .count {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--c);
+    letter-spacing: -0.01em;
+  }
+
+  .grupo-tag.active {
+    border-color: var(--c);
+    background: var(--c);
+    color: white;
+  }
+
+  .grupo-tag.active .count { color: white; }
+  .grupo-tag.active .dot { background: white; }
+
+  .grupos-legend.filtered .grupo-tag:not(.active) {
+    opacity: 0.35;
+  }
+
+  /* ----- Plano ----- */
+  .plano-wrap {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  #plano {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .plano-bg { fill: var(--paper); }
+  .plano-axis { stroke: rgba(74, 35, 119, 0.28); stroke-width: 1; stroke-dasharray: 4 4; }
+  .plano-frame { fill: none; stroke: var(--divider); stroke-width: 1; }
+
+  .plano-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    fill: var(--ink-soft);
+  }
+  .plano-label-strong {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 18px;
+    fill: var(--ink);
+  }
+
+  .punto-circle {
+    transition: opacity 0.3s ease, r 0.2s ease, transform 0.2s ease;
+  }
+  .punto-text {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    fill: white;
+    pointer-events: none;
+    transition: opacity 0.3s ease, font-size 0.2s ease;
+  }
+  .punto-group { cursor: pointer; }
+
+  .plano-wrap.filtered-preg .punto-group:not(.highlight) .punto-circle {
+    opacity: 0.12;
+  }
+  .plano-wrap.filtered-preg .punto-group:not(.highlight) .punto-text {
+    opacity: 0.15;
+  }
+
+  .plano-wrap.filtered-grupo .punto-group:not(.gr-active) .punto-circle {
+    opacity: 0.1;
+  }
+  .plano-wrap.filtered-grupo .punto-group:not(.gr-active) .punto-text {
+    opacity: 0.15;
+  }
+
+  .centroide {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 3;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .plano-wrap.filtered-preg .centroide.active {
+    opacity: 0.5;
+  }
+
+  /* ----- Preguntas legend ----- */
+  .preguntas-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+
+  .preguntas-legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 6px 20px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .preg-item {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  .preg-item:hover { background: var(--paper); }
+  .preg-item.active { background: var(--ink); color: white; }
+  .preg-item.active .preg-num { color: white; }
+  .preg-item.active .preg-count { color: rgba(255,255,255,0.7); }
+
+  .preg-num {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--coral);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .preg-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--divider);
+    color: var(--ink-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin: 0 auto 16px;
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .clear-btn.show { opacity: 1; pointer-events: auto; }
+  .clear-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 700px) {
+    .title-block h1 { font-size: 32px; }
+    .stat-num { font-size: 28px; }
+    .plano-label-strong { font-size: 14px; }
+    .plano-label { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="title-block">
+      <h1>Cómo <em>ubicaron</em> las preguntas</h1>
+      <div class="subtitle">
+        <span class="live-dot"></span>
+        <span>en vivo · <span id="last-update">—</span></span>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" id="stat-grupos"><em>0</em>/6</div>
+        <div class="stat-label">grupos activos</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-label">ubicaciones</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="grupos-legend" id="grupos-legend"></div>
+
+  <button class="clear-btn" id="clear-filter">✕ Ver todos</button>
+
+  <div class="plano-wrap" id="plano-wrap">
+    <svg id="plano" viewBox="0 0 800 500" role="img" aria-label="Mapa 2D con ubicaciones de preguntas por grupo">
+      <rect class="plano-bg" x="0" y="0" width="800" height="500"/>
+      <rect class="plano-frame" x="120" y="60" width="560" height="380" rx="8"/>
+      <line class="plano-axis" x1="400" y1="52" x2="400" y2="448"/>
+      <line class="plano-axis" x1="112" y1="250" x2="688" y2="250"/>
+      <text class="plano-label-strong" x="400" y="38" text-anchor="middle">le incumbe a la NyPE ↑</text>
+      <text class="plano-label-strong" x="400" y="474" text-anchor="middle">↓ le incumbe a otra ciencia</text>
+      <text class="plano-label" x="108" y="254" text-anchor="end">← fácil</text>
+      <text class="plano-label" x="692" y="254" text-anchor="start">difícil →</text>
+      <g id="centroides-layer"></g>
+      <g id="puntos-layer"></g>
+    </svg>
+  </div>
+
+  <div class="preguntas-title">Preguntas · tocá para resaltar cómo cada grupo la ubicó</div>
+  <div class="preguntas-legend" id="preguntas-legend"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ============================================================
+// Configuración de Supabase
+// ============================================================
+const SUPABASE_CONFIG = {
+    url: "https://ucqhiywotmjpkdlllmwq.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjcWhpeXdvdG1qcGtkbGxsbXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NTAwMzMsImV4cCI6MjEwMTIyNjAzM30.ZAvcnTDJKclWtLr3_oj2yu1DYmCkxgUC5QbAwJwnk-0"
+  };
+
+const client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+
+// ============================================================
+// Datos
+// ============================================================
+const GRUPOS = [
+  { id: 1, color: "#4A2377" },
+  { id: 2, color: "#0D7E87" },
+  { id: 3, color: "#F55F74" },
+  { id: 4, color: "#5AA3D1" },
+  { id: 5, color: "#4A9E5F" },
+  { id: 6, color: "#D18A2C" }
+];
+
+const PREGUNTAS = [
+  "¿Por qué dormimos?",
+  "¿ChatGPT entiende lo que dice?",
+  "¿Cómo se forman las galaxias?",
+  "¿Los varones y las mujeres piensan distinto?",
+  "¿Por qué las noticias falsas se comparten más rápido que las verdaderas?",
+  "¿Fue justa la última reforma jubilatoria?",
+  "¿Los videojuegos violentos generan personas más violentas?",
+  "¿Tenemos libre albedrío o el cerebro decide antes que nosotros?",
+  "¿Cómo se contagia un resfrío?",
+  "¿Por qué recordamos con más nitidez las cosas que nos emocionaron?",
+  "¿Está bien usar animales en investigación?",
+  "¿Los algoritmos de TikTok e Instagram polarizan a la sociedad?"
+];
+
+// Plot area: x=120..680 (560 wide), y=60..440 (380 tall)
+const PLOT = { x0: 120, y0: 60, w: 560, h: 380 };
+
+// ============================================================
+// Estado
+// ============================================================
+const state = {
+  ubicaciones: [], // [{ grupo, pregunta, x, y }]
+  filtroPregunta: null,
+  filtroGrupo: null
+};
+
+// ============================================================
+// Helpers
+// ============================================================
+function normToSvg(nx, ny) {
+  return { x: PLOT.x0 + nx * PLOT.w, y: PLOT.y0 + ny * PLOT.h };
+}
+
+function centroide(items) {
+  if (items.length === 0) return null;
+  const sx = items.reduce((a, b) => a + b.x, 0);
+  const sy = items.reduce((a, b) => a + b.y, 0);
+  return { x: sx / items.length, y: sy / items.length };
+}
+
+function radiusFor(items) {
+  if (items.length < 2) return 0;
+  const c = centroide(items);
+  const dists = items.map(p => Math.hypot(p.x - c.x, p.y - c.y));
+  const max = Math.max(...dists);
+  return { c, r: max };
+}
+
+// ============================================================
+// Render
+// ============================================================
+function renderGruposLegend() {
+  const cont = document.getElementById("grupos-legend");
+  cont.innerHTML = GRUPOS.map(g => {
+    const count = state.ubicaciones.filter(u => u.grupo === g.id).length;
+    const active = state.filtroGrupo === g.id ? "active" : "";
+    return `
+      <div class="grupo-tag ${active}" data-grupo="${g.id}" style="--c:${g.color}">
+        <span class="dot"></span>
+        <span>Grupo ${g.id}</span>
+        <span class="count">${count}/12</span>
+      </div>
+    `;
+  }).join("");
+  cont.classList.toggle("filtered", state.filtroGrupo !== null);
+  cont.querySelectorAll(".grupo-tag").forEach(tag => {
+    tag.addEventListener("click", () => {
+      const g = parseInt(tag.dataset.grupo, 10);
+      toggleFiltroGrupo(g);
+    });
+  });
+}
+
+function renderPreguntasLegend() {
+  const cont = document.getElementById("preguntas-legend");
+  cont.innerHTML = PREGUNTAS.map((texto, i) => {
+    const n = i + 1;
+    const count = state.ubicaciones.filter(u => u.pregunta === n).length;
+    const active = state.filtroPregunta === n ? "active" : "";
+    return `
+      <div class="preg-item ${active}" data-preg="${n}">
+        <span class="preg-num">${n}</span>
+        <span class="preg-text">${texto}</span>
+        <span class="preg-count">${count}/6</span>
+      </div>
+    `;
+  }).join("");
+  cont.querySelectorAll(".preg-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const n = parseInt(item.dataset.preg, 10);
+      toggleFiltroPregunta(n);
+    });
+  });
+}
+
+function renderPuntos() {
+  const layer = document.getElementById("puntos-layer");
+  const centLayer = document.getElementById("centroides-layer");
+  layer.innerHTML = "";
+  centLayer.innerHTML = "";
+  const svgNS = "http://www.w3.org/2000/svg";
+
+  state.ubicaciones.forEach(u => {
+    const { x, y } = normToSvg(u.x, u.y);
+    const grupo = GRUPOS.find(g => g.id === u.grupo);
+    if (!grupo) return;
+
+    const g = document.createElementNS(svgNS, "g");
+    g.setAttribute("class", "punto-group");
+    g.dataset.preg = u.pregunta;
+    g.dataset.grupo = u.grupo;
+
+    // Aplicar clases de highlight/filter
+    if (state.filtroPregunta === u.pregunta) g.classList.add("highlight");
+    if (state.filtroGrupo === u.grupo) g.classList.add("gr-active");
+
+    const c = document.createElementNS(svgNS, "circle");
+    c.setAttribute("class", "punto-circle");
+    c.setAttribute("cx", x);
+    c.setAttribute("cy", y);
+    c.setAttribute("r", state.filtroPregunta === u.pregunta ? 24 : 18);
+    c.setAttribute("fill", grupo.color);
+    c.setAttribute("stroke", "white");
+    c.setAttribute("stroke-width", "2.5");
+    c.setAttribute("opacity", "0.92");
+
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("class", "punto-text");
+    t.setAttribute("x", x);
+    t.setAttribute("y", y);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("dominant-baseline", "central");
+    t.setAttribute("font-size", state.filtroPregunta === u.pregunta ? 18 : 14);
+    t.textContent = u.pregunta;
+
+    g.appendChild(c);
+    g.appendChild(t);
+    layer.appendChild(g);
+  });
+
+  // Dibujar círculo de dispersión si hay filtro de pregunta
+  if (state.filtroPregunta) {
+    const items = state.ubicaciones
+      .filter(u => u.pregunta === state.filtroPregunta)
+      .map(u => normToSvg(u.x, u.y));
+    if (items.length >= 2) {
+      const r = radiusFor(items);
+      const circ = document.createElementNS(svgNS, "circle");
+      circ.setAttribute("class", "centroide active");
+      circ.setAttribute("cx", r.c.x);
+      circ.setAttribute("cy", r.c.y);
+      circ.setAttribute("r", r.r + 10);
+      centLayer.appendChild(circ);
+    }
+  }
+
+  document.getElementById("plano-wrap").classList.toggle("filtered-preg", state.filtroPregunta !== null);
+  document.getElementById("plano-wrap").classList.toggle("filtered-grupo", state.filtroGrupo !== null);
+}
+
+function renderStats() {
+  const gruposActivos = new Set(state.ubicaciones.map(u => u.grupo)).size;
+  document.getElementById("stat-grupos").innerHTML = `<em>${gruposActivos}</em>/6`;
+  document.getElementById("stat-total").textContent = state.ubicaciones.length;
+}
+
+function renderAll() {
+  renderGruposLegend();
+  renderPreguntasLegend();
+  renderPuntos();
+  renderStats();
+  const clearBtn = document.getElementById("clear-filter");
+  const hasFilter = state.filtroPregunta !== null || state.filtroGrupo !== null;
+  clearBtn.classList.toggle("show", hasFilter);
+}
+
+// ============================================================
+// Filters
+// ============================================================
+function toggleFiltroPregunta(n) {
+  state.filtroPregunta = state.filtroPregunta === n ? null : n;
+  state.filtroGrupo = null;
+  renderAll();
+}
+
+function toggleFiltroGrupo(g) {
+  state.filtroGrupo = state.filtroGrupo === g ? null : g;
+  state.filtroPregunta = null;
+  renderAll();
+}
+
+function clearFiltros() {
+  state.filtroPregunta = null;
+  state.filtroGrupo = null;
+  renderAll();
+}
+
+document.getElementById("clear-filter").addEventListener("click", clearFiltros);
+
+// ============================================================
+// Load data
+// ============================================================
+async function loadData() {
+  try {
+    const { data, error } = await client.from("ubicaciones").select("*").order("updated_at", { ascending: true });
+    if (error) throw error;
+    state.ubicaciones = data || [];
+    renderAll();
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    document.getElementById("last-update").textContent = `${hh}:${mm}:${ss}`;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Realtime
+try {
+  client
+    .channel("ubicaciones-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "ubicaciones" }, () => {
+      loadData();
+    })
+    .subscribe();
+} catch (e) {
+  console.warn("Realtime no disponible, usando polling");
+}
+
+// Polling de respaldo
+loadData();
+setInterval(loadData, 5000);
+</script>
+</body>
+</html>
